@@ -18,10 +18,18 @@ $RECYCLE.BIN/
 # Windows shortcuts
 *.lnk
 
+#Platform IO meta files
+.vscode/*
+.pio/*
+debug.log
+.travis.yml
+*/README
+
+#eagles backup & history
+schema/*.s#*
+
 # =========================
-# Operating System Files
+# Project Private
 # =========================
 secret.h
-schema/*.s#*
 local/*
-.vscode/*
