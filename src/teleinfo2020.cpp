@@ -77,80 +77,13 @@ int             puissance   = 99;
 int             digitIndex  = 0;
 
 
-////////////////////////////////////////////////////////////////////////////////////////////////
-//--------------------------------------  S E T U P --------------------------------------------
-void setup() {
-
-    //PIN
-    pinMode(LED_BUILTIN, OUTPUT);
-        // 74HC595 Pins
-    pinMode(PIN_LATCH, OUTPUT);
-    pinMode(PIN_CLOCK, OUTPUT);
-    pinMode(PIN_DATA, OUTPUT);
-        // 7segments common anode pins
-    pinMode(PIN_DRIVE1, OUTPUT);
-    pinMode(PIN_DRIVE2, OUTPUT);
-
-    digitalWrite(PIN_CLOCK,LOW);
-    digitalWrite(PIN_LATCH,LOW);
-
-    digitalWrite(LED_BUILTIN, false);                         
-
-    // SERIAL
-    Serial.begin(9600);
-    delay(200);
-    Serial.swap();
-    delay(100);
-
-    // FILE
-#ifdef DEBUG
-        SPIFFS.begin();
-        SPIFFS.format();
-        fileLog = SPIFFS.open("/log.txt", "w");    
-        server.begin();
-        server.serveStatic("/", SPIFFS, "/log.txt");
-#endif
-
-    // WIFI Connection
-    WiFi.begin(ssid, password);             // Connect to the network
-    debug(VERSION);
-    debug(" Connecting to ");
-    debug(ssid); 
-    debugln(" ...");
-
-    int i = 0;
-    while (WiFi.status() != WL_CONNECTED) { // Wait for the Wi-Fi to connect
-        delay(100);
-        debug(++i); 
-        debug(' ');
-    }
-    // Local IP Copy
-    String sLocalIp = String() + WiFi.localIP()[0] + "." + WiFi.localIP()[1] + "." + WiFi.localIP()[2] + "." + WiFi.localIP()[3];
-    strcpy(localIp,sLocalIp.c_str());
-
-    debugln('\n');
-    debugln("Connection established!");  
-    debug("IP address:\t");
-    debugln(localIp);         // Send the IP address of the ESP8266 to the computer
-
-    //MQTT
-    debugln("setting mqtt server to " + String(mqttServer));   
-    mqttCnx.setServer(mqttServer, 1883);                                      //Configuration de la connexion au serveur MQTT
-    mqttCnx.setCallback(mqttCallback);                                        //La fonction de callback qui est executée à chaque réception de message  
-    mqttCnx.disconnect();
-    mqttConnect();
-    mqttSend("linky", "started", localIp);
-
-    initCacheLabel();
-    messageInit();
-
-}
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 //------------------------  M Q T T   C O N N E C T I O N  --------------------------------------
 void mqttCallback(char* topic, byte* payload, unsigned int length) {
 
-    int i;
+    unsigned int    i;
+
     debugln("Message recu =>  topic: " + String(topic));
     debug(" | longueur: " + String(length,DEC));
 
@@ -192,9 +125,9 @@ void mqttSend(const char* category, char* label, char* value) {
 void initCacheLabel() {
 
     char    pLabel;
-    int     iCacheLabel  = 0;
-    int     iLabel  = 0;
-    int     iMsgCache = 0;
+    int     iCacheLabel     = 0;
+    int     iLabel          = 0;
+    int     iMsgCache       = 0;
 
     /*  Copier les etiquettes de TMSG_CACHE_LABEL dans chacun
         des objets qui vont servir de cache pour ces tags la.
@@ -215,9 +148,6 @@ void initCacheLabel() {
 
 int checkCacheLabel() {
 
-    char    pLabel;
-    int     iCacheLabel  = 0;
-    int     iLabel  = 0;
     int     iMsgCache = 0;
 
     /*  Parcours de TMSG_CACHE_LABEL pour trouver un label identique
@@ -251,10 +181,7 @@ void affiche(int value, int thisIndex) {
 
     char    segment[10];
     char    digit[2];
-    int     iDigit;
-    int     iSegment;
     int     thisSeg;
-    bool    thisBit;
 
     segment[0] = B0111111;
     segment[1] = B0000110;
@@ -308,6 +235,7 @@ void messageInit() {
 int processMessage(char c) {
 
     c &= 0x7F;
+
     if (messageFailed == 0 && bufferIdx >= TMSG_SIZE_BUFFER - 1) {
         messageFailed = 1;
         return 2;
@@ -417,6 +345,79 @@ int processMessage(char c) {
 }
 
 
+////////////////////////////////////////////////////////////////////////////////////////////////
+//--------------------------------------  S E T U P --------------------------------------------
+void setup() {
+
+    int     i = 0;
+
+    //PIN
+    pinMode(LED_BUILTIN, OUTPUT);
+        // 74HC595 Pins
+    pinMode(PIN_LATCH, OUTPUT);
+    pinMode(PIN_CLOCK, OUTPUT);
+    pinMode(PIN_DATA, OUTPUT);
+        // 7segments common anode pins
+    pinMode(PIN_DRIVE1, OUTPUT);
+    pinMode(PIN_DRIVE2, OUTPUT);
+
+    digitalWrite(PIN_CLOCK,LOW);
+    digitalWrite(PIN_LATCH,LOW);
+
+    digitalWrite(LED_BUILTIN, false);                         
+
+    // SERIAL
+    Serial.begin(9600);
+    delay(200);
+    Serial.swap();
+    delay(100);
+
+    // FILE
+#ifdef DEBUG
+        SPIFFS.begin();
+        SPIFFS.format();
+        fileLog = SPIFFS.open("/log.txt", "w");    
+        server.begin();
+        server.serveStatic("/", SPIFFS, "/log.txt");
+#endif
+
+    // WIFI Connection
+    WiFi.begin(ssid, password);             // Connect to the network
+    debug(VERSION);
+    debug(" Connecting to ");
+    debug(ssid); 
+    debugln(" ...");
+
+    while (WiFi.status() != WL_CONNECTED) { // Wait (4min max) for the Wi-Fi to connect
+        delay(500);
+        debug(++i); 
+        debug(' ');
+        if (i > 500) {                      // Reboot if no wifi connection 
+            ESP.reset();
+        }
+    }
+
+    // Local IP Copy
+    String sLocalIp = String() + WiFi.localIP()[0] + "." + WiFi.localIP()[1] + "." + WiFi.localIP()[2] + "." + WiFi.localIP()[3];
+    strcpy(localIp,sLocalIp.c_str());
+
+    debugln('\n');
+    debugln("Connection established!");  
+    debug("IP address:\t");
+    debugln(localIp);         // Send the IP address of the ESP8266 to the computer
+
+    //MQTT
+    debugln("setting mqtt server to " + String(mqttServer));   
+    mqttCnx.setServer(mqttServer, 1883);                                      //Configuration de la connexion au serveur MQTT
+    mqttCnx.setCallback(mqttCallback);                                        //La fonction de callback qui est executée à chaque réception de message  
+    mqttCnx.disconnect();
+    mqttConnect();
+    mqttSend("linky", "started", localIp);
+
+    initCacheLabel();
+    messageInit();
+
+}
 
 /////////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////          L O O P           //////////////////////////////
@@ -424,8 +425,8 @@ int processMessage(char c) {
 
 void loop()
 {
-    int isMsg = 0;
-    char c;
+    int     isMsg   = 0;
+    char    c;
 
     if (Serial.available() > 0) {
         if (Serial.available() > 250) {
@@ -496,7 +497,6 @@ void loop()
         server.handleClient();
 #endif
 
-
 	//Wifi lost = reset
 	if (WiFi.status() != WL_CONNECTED) {
 		delay(5000);
@@ -506,8 +506,3 @@ void loop()
     //yield();
     digitalWrite(LED_BUILTIN, led);                         // set pin to the opposite state
 }
-
-
-
-
-
