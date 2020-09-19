@@ -4,6 +4,7 @@
 #endif
 
 
+#include <Arduino.h>
 #include <ESP8266WiFi.h>          // ESP8266 Core WiFi Library 
 #include <PubSubClient.h>
 
@@ -225,8 +226,8 @@ int checkCacheLabel() {
     for(iMsgCache=0; iMsgCache< TMSG_CACHE_SIZE; iMsgCache++) {
         if (strcmp(message.label, msgCache[iMsgCache].label) == 0) {
             if (strcmp(message.value, msgCache[iMsgCache].value) == 0) {
-                if (msgCache[iMsgCache].cacheHit++ >= 100) {
-                    // Une fois sur +/- 90-100 on renvoi le message afin de confirmer la valeur
+                if (msgCache[iMsgCache].cacheHit++ >= 1000) {
+                    // Une fois sur +/- 990-1000 on renvoi le message afin de confirmer la valeur
                     // On initialisa avec un decalage de iMsgCache modulo 10 pour eviter 
                     // que tous les renvois soient synchronisé.
                     msgCache[iMsgCache].cacheHit = (iMsgCache % 10);
@@ -459,15 +460,15 @@ void loop()
         led = !led;                                               //toggle state
     } else {
         iLoop++;
-        if (iLoop == 50) {
+        if (iLoop == 1000) {
             itoa(errorCount, sItoaBuffer, 10);
             mqttSend("linky", "RxError", sItoaBuffer);
         } 
-        if (iLoop == 250) {
+        if (iLoop == 4000) {
             itoa(bufferOverflow, sItoaBuffer, 10);
             mqttSend("linky", "bufferOverflow", sItoaBuffer);
         } 
-        if (iLoop == 450) {
+        if (iLoop == 7000) {
             if (cacheMiss >= 1000000) {
                 cacheHit = cacheHit / 100;
                 cacheMiss = cacheMiss / 100;
@@ -482,9 +483,10 @@ void loop()
             led = !led;  
             mqttCnx.loop();
         } 
-        if (iLoop >= 1000) {
+        if (iLoop >= 10000) {
             iLoop = 0;
         } 
+        delay(10);
     }
 
     digitIndex = !digitIndex;

@@ -24,3 +24,4 @@ $RECYCLE.BIN/
 secret.h
 schema/*.s#*
 local/*
+.vscode/*
